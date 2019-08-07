@@ -1,0 +1,68 @@
+version: '3'
+services:
+  mysql:
+    image: mysql:5.7
+    ports:
+        - "3306:3306"
+        - "33060:33060"
+    volumes:
+        - ./mysqldb/conf:/etc/mysql/conf.d
+        - ./mysqldb/init:/docker-entrypoint-initdb.d
+        # - ./mysqldb/data:/var/lib/mysql
+    # 提升容器权限，确保权限允许
+    privileged: true
+    # 环境变量
+    environment:
+        # mysql密码
+        - MYSQL_ROOT_PASSWORD=123456
+    container_name: "Kafka_mysql"
+  
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: "zookeeper"
+    ports:
+      - "2181:2181"
+
+  kafka:
+    container_name: "kafka"
+    image: wurstmeister/kafka:latest
+    ports: 
+      - "9092:9092"
+    links:
+      - zookeeper:zookeeper
+      - mysql:mysql
+    environment:
+      # 注意，迁移时候需要修改下面的地址为本机ip
+      - KAFKA_ADVERTISED_HOST_NAME=192.168.0.106
+      - KAFKA_ADVERTISED_PORT=9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CREATE_TOPICS="mysqlsource:1,1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime
+      # - ./kafka_connect/mysql.properties:/opt/kafka/config/mysql.properties
+
+  neo4j:
+    image: neo4j:3.4
+    links:
+        - mysql:mysql
+    ports:
+        - 7474:7474
+        - 7687:7687
+    volumes:
+        - ./neo4jdb/plugins:/var/lib/neo4j/plugins
+        # - ./neo4jdb:/data
+    environment:
+        - NEO4J_AUTH=neo4j/123456
+    container_name: "neo4j"
+
+  maxwell:
+    # mysql kafka 中间件
+    # 参考 http://maxwells-daemon.io/quickstart/
+    image: zendesk/maxwell:latest
+    container_name: "maxwell"
+    links:
+      - kafka:kafka
+      - mysql:mysql
+    command: bin/maxwell --user='maxwell' --password='XXXXXX' --host='mysql' --producer=kafka --kafka.bootstrap.servers=kafka:9092 --kafka_topic=mysqlsource
+    
