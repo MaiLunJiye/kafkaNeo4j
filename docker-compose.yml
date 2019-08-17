@@ -61,8 +61,9 @@ services:
     # 参考 http://maxwells-daemon.io/quickstart/
     image: zendesk/maxwell:latest
     container_name: "maxwell"
+    volumes:
+        - ./maxwell:/script
     links:
       - kafka:kafka
       - mysql:mysql
-    command: bin/maxwell --user='maxwell' --password='XXXXXX' --host='mysql' --producer=kafka --kafka.bootstrap.servers=kafka:9092 --kafka_topic=mysqlsource
-    
+    command: sh /script/start.sh
