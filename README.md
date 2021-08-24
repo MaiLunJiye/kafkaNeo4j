@@ -304,3 +304,7 @@ print(res.text)
 ```
 
 剩下的就是自行补充中间部分（如解析kafka的数据，组合生成cypher语句） 就行。具体实现可以查看[完整文件](pythonSync/datasync.py)
+
+# license
+
+MIT
